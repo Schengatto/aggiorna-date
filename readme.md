@@ -1,6 +1,6 @@
 # Linux update file dates script
 This is a script for Linux that allows you to easily change the date of creation, the date of edit and the date of the last access of a specific file.
-If you have Nemo as file manager you will also find this script as a shortcut in the context menu under the voice "Script".
+If you have Nemo or Nautilus as file manager you will also find this script as a shortcut in the context menu under the voice "Script".
 
 
 ## How to install

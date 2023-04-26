@@ -38,7 +38,7 @@ printTimestampAsDateTime () {
 }
 
 fromTimestampToTouchTime () {
-    echo "$(date +'%Y%m%d%H%M%S' -d "@${1}")"
+    echo "$(date +'%Y%m%d%H%M.%S' -d "@${1}")"
 }
 
 setCurrentDateTime() {
@@ -51,23 +51,13 @@ resetDateTime() {
 }
 
 defineNewTimestamp () {
-    #echo "Inserisci l'anno della data di $1 [es: 2023]"
-    #read year
-    #echo "Inserisci il mese della data di $1 [es: 01]"
-    #read month
-    #echo "Inserisci il giorno della data di $1 [es: 09]"
-    #read day
-    #echo "Inserisci ora e minuti [es: 08:05]"
-    #read time
-    #TIMESTAMP="${year}${month}${day}$(echo ${time} | tr -d :)"
-
     echo "Inserisci la la data di $1 [es: 2023-01-05]"
     read date
     echo "Inserisci ora, minuti e secondi [es: 08:05:30]"
     read time
     P_DATE=$(echo ${date} | tr -d -)
     P_TIME=$(echo ${time} | tr -d :)
-    TIMESTAMP="${P_DATE}${P_TIME}"
+    TIMESTAMP="${P_DATE}${P_TIME:0:4}.${P_TIME:4:2}"
 }
 
 replaceOldFileWithNewFile() {

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+gnome-terminal -- aggiorna-date $1

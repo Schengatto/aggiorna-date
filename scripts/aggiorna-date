@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# ------------------------------- #
+# Variabili
+# ------------------------------- #
+TIMESTAMP=""
+TARGET_FILE=$(echo $FILE_PATH.updated)
+TIME_ZONE=$(cat /etc/timezone)
+
+# ------------------------------- #
+# Funzioni
+# ------------------------------- #
+createTargetFile () {
+    # remove old version of updated file
+    if [ -f "$TARGET_FILE" ]; then
+         rm $TARGET_FILE
+    fi
+    # create new version of updated file
+    cp $FILE_PATH $TARGET_FILE
+    chmod 777 $TARGET_FILE
+}
+
+readFileCreationTimestamp () {
+    echo $(stat --format=%W ${FILE_PATH})
+}
+
+readFileEditTimestamp () {
+    echo $(stat --format=%Y ${FILE_PATH})
+}
+
+readFileLastAccessTimestamp () {
+    echo $(stat --format=%X ${FILE_PATH})
+}
+
+printTimestampAsDateTime () {
+    DATE_TIME=$(date -d @${1})
+    echo "Data corrente: ${DATE_TIME}."
+}
+
+fromTimestampToTouchTime () {
+    echo "$(date +'%Y%m%d%H%M' -d "@${1}")"
+}
+
+setCurrentDateTime() {
+    sudo systemctl stop systemd-timesyncd.service
+    sudo timedatectl set-time "$1"
+}
+
+resetDateTime() {
+    sudo systemctl start systemd-timesyncd.service
+}
+
+defineNewTimestamp () {
+    #echo "Inserisci l'anno della data di $1 [es: 2023]"
+    #read year
+    #echo "Inserisci il mese della data di $1 [es: 01]"
+    #read month
+    #echo "Inserisci il giorno della data di $1 [es: 09]"
+    #read day
+    #echo "Inserisci ora e minuti [es: 08:05]"
+    #read time
+    #TIMESTAMP="${year}${month}${day}$(echo ${time} | tr -d :)"
+
+    echo "Inserisci la la data di $1 [es: 2023-01-05]"
+    read date
+    echo "Inserisci ora e minuti [es: 08:05]"
+    read time
+    P_DATE=$(echo ${date} | tr -d -)
+    P_TIME=$(echo ${time} | tr -d :)
+    TIMESTAMP="${P_DATE}${P_TIME}"
+}
+
+replaceOldFileWithNewFile() {
+    #mv $FILE_PATH $FILE_PATH.orig
+    mv $TARGET_FILE $FILE_PATH
+}
+
+# ------------------------------- #
+# SCRIPT LOGIC
+# ------------------------------- #
+
+# Ripulisce il terminale prima di eseguire i singoli scripts
+clear
+
+# Recupera il nome del file che deve essere modificato
+if [ -z "$1" ]; then
+    ls
+    echo ""
+    echo -n "Inserisci il nome del file che vuoi modificare: "
+    read FILE_PATH
+else
+    FILE_PATH=$1
+fi
+
+# Verificare che il file sia realmente presente
+if [ ! -f "$FILE_PATH" ]; then
+    echo "Il file $FILE_PATH non esiste nella cartella corrente."
+    exit -1
+fi
+
+# Legge le date del file selezionato
+ORIGINAL_CREATED_TIMESTAMP=$(readFileCreationTimestamp)
+ORIGINAL_EDIT_TIMESTAMP=$(readFileEditTimestamp)
+ORIGINAL_LAST_ACCESS_TIMESTAMP=$(readFileLastAccessTimestamp)
+
+# Logica per cambio data di creazione
+echo -e "\nDATA CREAZIONE"
+printTimestampAsDateTime $ORIGINAL_CREATED_TIMESTAMP
+read -p "Vuoi cambiare la data di creazione? (s/n): " updateCreateDate
+if [ $updateCreateDate = "s" ]; then
+    defineNewTimestamp "creazione"
+    setCurrentDateTime "${date} ${time}"
+    createTargetFile
+    resetDateTime
+    replaceOldFileWithNewFile
+    touch -m -t "$(fromTimestampToTouchTime $ORIGINAL_EDIT_TIMESTAMP)" ${FILE_PATH}
+    touch -a -t "$(fromTimestampToTouchTime $ORIGINAL_LAST_ACCESS_TIMESTAMP)" ${FILE_PATH}
+    echo "Data di creazione aggiornata: $(printTimestampAsDateTime $(readFileCreationTimestamp))"
+fi
+
+# Logica per cambio data di modifica
+echo -e "\nDATA MODIFICA"
+printTimestampAsDateTime $ORIGINAL_EDIT_TIMESTAMP
+read -p "Vuoi cambiare la data di modifica? (s/n): " updateEditDate
+if [ $updateEditDate = "s" ]; then
+    defineNewTimestamp "modifica"
+    touch -m -t ${TIMESTAMP} ${FILE_PATH}
+    echo "Data di modifica aggiornata: $(printTimestampAsDateTime $(readFileEditTimestamp))"
+fi
+
+# Logica per cambio data di ultimo accesso
+echo -e "\nDATA ULTIMO ACCESSO"
+printTimestampAsDateTime $ORIGINAL_LAST_ACCESS_TIMESTAMP
+read -p "Vuoi cambiare la data di accesso? (s/n): " updateLastAccessDate
+if [ $updateLastAccessDate = "s" ]; then
+    defineNewTimestamp "accesso"
+    touch -a -t ${TIMESTAMP} ${FILE_PATH}
+    echo "Data di ultimo accesso aggiornata: $(printTimestampAsDateTime $(readFileLastAccessTimestamp))"
+fi
+
+echo "--------------------------------"
+stat $FILE_PATH

@@ -130,3 +130,5 @@ fi
 
 echo "--------------------------------"
 stat $FILE_PATH
+
+read -p "Premi un tasto per terminare, poi Fn+F5 per aggiornare." fine
